@@ -236,19 +236,21 @@ public class CssCompressor {
         // would become
         //     filter: chroma(color="#FFF");
         // which makes the filter break in IE.
-        p = Pattern.compile("([^\"'=\\s])(\\s*)#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])");
+
+        // match only HEX colors that are 6 chars length, followed by a ";", "}", " ", or "/".
+    	// This prevents hitting a selector. Side effect, we don't match "background: none#ffaabb;". Whenever some browsers seem to support
+		// this rule declaration without the space between property + color, the number of such cases should be low to none, and it's preferable
+		// to be safer than make an erroneous selector transformation... 
+        p = Pattern.compile("(\\s|:|/)(\\s*)#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])(;|\\}|\\s|/)");
+
         m = p.matcher(css);
         sb = new StringBuffer();
         while (m.find()) {
-            if (m.group(1).equals("}")) {
-                // Likely an ID selector. Don't touch.
-                // #AABBCC is a valid ID. IDs are case-sensitive.
-                m.appendReplacement(sb, m.group());
-            } else if (m.group(3).equalsIgnoreCase(m.group(4)) &&
-                    m.group(5).equalsIgnoreCase(m.group(6)) &&
-                    m.group(7).equalsIgnoreCase(m.group(8))) {
+            if (m.group(3).equalsIgnoreCase(m.group(4)) &&
+                m.group(5).equalsIgnoreCase(m.group(6)) &&
+                m.group(7).equalsIgnoreCase(m.group(8))) {
                 // #AABBCC pattern
-                m.appendReplacement(sb, (m.group(1) + m.group(2) + "#" + m.group(3) + m.group(5) + m.group(7)).toLowerCase());
+                m.appendReplacement(sb, (m.group(1) + m.group(2) + "#" + m.group(3) + m.group(5) + m.group(7) + m.group(9)).toLowerCase());
             } else {
                 // Any other color.
                 m.appendReplacement(sb, m.group().toLowerCase());
